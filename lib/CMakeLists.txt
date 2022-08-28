@@ -3,15 +3,19 @@ include_directories(
   ${OPENCL_INCLUDE_DIRS}
 )
 
+find_package (Python COMPONENTS Interpreter Development)
+
 macro(generate_hex_header name)
+  MESSAGE("AL -->  ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/stripcr.py ${CMAKE_CURRENT_SOURCE_DIR}/${name}.cl ${name}-endlfix.cl")
+  MESSAGE("AL -->  ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/xxd.py ${name}-endlfix.cl ${name}.h")
   add_custom_command(
     OUTPUT ${name}.h
     DEPENDS ${name}.cl
-    COMMAND ${PYTHON_EXECUTABLE}
+    COMMAND ${Python_EXECUTABLE}
               ${CMAKE_CURRENT_SOURCE_DIR}/stripcr.py
 			  ${CMAKE_CURRENT_SOURCE_DIR}/${name}.cl
 			  ${name}-endlfix.cl
-    COMMAND ${PYTHON_EXECUTABLE}
+    COMMAND ${Python_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/xxd.py ${name}-endlfix.cl ${name}.h
   )
 endmacro(generate_hex_header name)
