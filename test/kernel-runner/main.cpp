@@ -35,8 +35,6 @@
 
 #include <cstring>
 
-#include "llvm/Support/TimeValue.h"
-
 #define SCALAR 0
 
 #define DEVICE_TYPE CL_DEVICE_TYPE_ALL
@@ -138,8 +136,6 @@ bool testSource(int id, cl_device_id device, std::string const& source,
     std::string &kernelName, int globalWorkSize, int loopCount, std::vector<CommandLineArg*> &dataArguments, bool isTransformed, 
     char* programOutput, bool debug, bool hasOutput, float*& imageOutput, size_t imageOutputDims[2])
 {
-    using llvm::sys::TimeValue;
-
     cl_int ret = CL_SUCCESS;
 
     /* used for determining which image buffer to copy back to imageOutput */
@@ -198,10 +194,10 @@ bool testSource(int id, cl_device_id device, std::string const& source,
         ucharInit[i] = i;
     }
 
-    TimeValue allocate_buffers_begin = TimeValue::now();
+    const auto allocate_buffers_begin = std::chrono::high_resolution_clock::now();
 
     for (unsigned i = 0; i < dataArguments.size(); i++) {
-        if (BufferArg* buffer = dynamic_cast<BufferArg*>(dataArguments[i])) {
+        if (BufferArg* buffer = static_cast<BufferArg*>(dataArguments[i])) {
             if (buffer->size == SCALAR) {
                 switch (buffer->initType) {
                 case 0:
@@ -240,7 +236,7 @@ bool testSource(int id, cl_device_id device, std::string const& source,
                     args.appendArray(&memBuf, buffer->length);
                 }        
             }
-        } else if (ImageArg* image = dynamic_cast<ImageArg*>(dataArguments[i])) {
+        } else if (ImageArg* image = static_cast<ImageArg*>(dataArguments[i])) {
             cl_image_format format = { CL_RGBA, CL_FLOAT };
             cl_image_desc desc = {
               /* image_type        : */ CL_MEM_OBJECT_IMAGE2D,
@@ -293,7 +289,7 @@ bool testSource(int id, cl_device_id device, std::string const& source,
 
     ret = clFinish(command_queue);
 
-    TimeValue enqueue_kernel_begin = TimeValue::now();
+    const auto enqueue_kernel_begin = std::chrono::high_resolution_clock::now();
 
     // Execute the OpenCL kernel on the list
     size_t global_item_size = globalWorkSize; // Process the entire lists
@@ -312,10 +308,10 @@ bool testSource(int id, cl_device_id device, std::string const& source,
     
     ret = clFinish(command_queue);
 
-    TimeValue enqueue_kernel_end = TimeValue::now();
+    const auto enqueue_kernel_end = std::chrono::high_resolution_clock::now();
 
-    double allocate_buffers_ms = (enqueue_kernel_begin - allocate_buffers_begin).msec();
-    double enqueue_kernel_ms = (enqueue_kernel_end - enqueue_kernel_begin).msec();
+    double allocate_buffers_ms = std::chrono::duration<double>(enqueue_kernel_begin - allocate_buffers_begin).count();
+    double enqueue_kernel_ms = std::chrono::duration<double>(enqueue_kernel_end - enqueue_kernel_begin).count();
 
     double elapsed_ms = allocate_buffers_ms + enqueue_kernel_ms;
     std::cerr << "allocate_buffers: " << allocate_buffers_ms << "ms\n"
@@ -544,7 +540,7 @@ int main(int argc, char const* argv[])
                   << "kernel:" << kernel << std::endl
                   << "gcount:" << globalWorkItemCount << std::endl;
         for (unsigned int i = 0; i < dataArguments.size(); i++) {
-            if (BufferArg* buffer = dynamic_cast<BufferArg*>(dataArguments[i])) {
+            if (BufferArg* buffer = static_cast<BufferArg*>(dataArguments[i])) {
                 std::cerr << "buffer: " << buffer->as << ":" << buffer->size << ":" << buffer->length << "\n";
             }
         }

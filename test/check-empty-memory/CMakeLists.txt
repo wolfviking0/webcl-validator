@@ -10,6 +10,7 @@ include_directories(
 
 target_link_libraries(
   check-empty-memory
+  PRIVATE
   ${OPENCL_LIBRARIES}
 )
 

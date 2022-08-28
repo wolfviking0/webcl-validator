@@ -14,6 +14,7 @@ include_directories(
 
 target_link_libraries(
   kernel-runner
+  PRIVATE
   ${OPENCL_LIBRARIES}
 )
 

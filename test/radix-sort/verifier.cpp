@@ -24,9 +24,6 @@
 #include "sorter.hpp"
 #include "verifier.hpp"
 
-#include "llvm/Support/TimeValue.h"
-
-
 RadixSortVerifier::RadixSortVerifier(const std::string &name)
     : OpenCLBuilderForOnePlatformAndDevice(name, "Portable OpenCL", "pthread")
 {
@@ -38,8 +35,6 @@ RadixSortVerifier::~RadixSortVerifier()
 
 bool RadixSortVerifier::verifySorter(RadixSorter &sorter)
 {
-    using llvm::sys::TimeValue;
-
     if (!compileInput(sorter, ""))
         return false;
 
@@ -48,7 +43,7 @@ bool RadixSortVerifier::verifySorter(RadixSorter &sorter)
         return false;
     }
 
-    TimeValue allocate_buffers_begin = TimeValue::now();
+    const auto allocate_buffers_begin = std::chrono::high_resolution_clock::now();
     if (!sorter.createHistogram()) {
         std::cerr << name_ << ": Can't create histogram buffer." << std::endl;
         return false;
@@ -58,23 +53,23 @@ bool RadixSortVerifier::verifySorter(RadixSorter &sorter)
         std::cerr << name_ << ": Can't populate buffers." << std::endl;
         return false;
     }
-    TimeValue allocate_buffers_end = TimeValue::now();
+    const auto allocate_buffers_end = std::chrono::high_resolution_clock::now();
 
-    TimeValue stream_kernel_begin = TimeValue::now();
+    const auto stream_kernel_begin = std::chrono::high_resolution_clock::now();
     if (!sorter.createStreamCountKernel()) {
         std::cerr << name_ << ": Can't create stream count kernel." << std::endl;
         return false;
     }
-    TimeValue stream_kernel_end = TimeValue::now();
+    const auto stream_kernel_end = std::chrono::high_resolution_clock::now();
 
-    TimeValue prefix_kernel_begin = TimeValue::now();
+    const auto prefix_kernel_begin = std::chrono::high_resolution_clock::now();
     if (!sorter.createPrefixScanKernel()) {
         std::cerr << name_ << ": Can't create prefix scan kernel." << std::endl;
         return false;
     }
-    TimeValue prefix_kernel_end = TimeValue::now();
+    const auto prefix_kernel_end = std::chrono::high_resolution_clock::now();
 
-    TimeValue stream_count_begin = TimeValue::now();
+    const auto stream_count_begin = std::chrono::high_resolution_clock::now();
     cl_event streamCountEvent;
     if (!sorter.runStreamCountKernel(&streamCountEvent)) {
         std::cerr << name_ << ": Can't run stream count kernel." << std::endl;
@@ -85,7 +80,7 @@ bool RadixSortVerifier::verifySorter(RadixSorter &sorter)
         std::cerr << name_ << ": Can't get stream count results." << std::endl;
         return false;
     }
-    TimeValue stream_count_end = TimeValue::now();
+    const auto stream_count_end = std::chrono::high_resolution_clock::now();
 
 
 
@@ -94,7 +89,7 @@ bool RadixSortVerifier::verifySorter(RadixSorter &sorter)
         return false;
     }
 
-    TimeValue prefix_scan_begin = TimeValue::now();
+    const auto prefix_scan_begin = std::chrono::high_resolution_clock::now();
     cl_event prefixScanEvent;
     if (!sorter.runPrefixScanKernel(streamCountEvent, &prefixScanEvent)) {
         std::cerr << name_ << ": Can't run prefix scan kernel." << std::endl;
@@ -106,12 +101,12 @@ bool RadixSortVerifier::verifySorter(RadixSorter &sorter)
         return false;
     }
 
-    TimeValue prefix_scan_end = TimeValue::now();
-    double prefix_scan_ms = (prefix_scan_end - prefix_scan_begin).msec();
-    double allocate_buffers_ms = (allocate_buffers_end - allocate_buffers_begin).msec();
-    double stream_count_ms = (stream_count_end - stream_count_begin).msec();
-    double prefix_kernel_ms = (prefix_kernel_end - prefix_kernel_begin).msec();
-    double stream_kernel_ms = (stream_kernel_end - stream_kernel_begin).msec();
+    const auto prefix_scan_end = std::chrono::high_resolution_clock::now();
+    double prefix_scan_ms = std::chrono::duration<double>(prefix_scan_end - prefix_scan_begin).count();
+    double allocate_buffers_ms = std::chrono::duration<double>(allocate_buffers_end - allocate_buffers_begin).count();
+    double stream_count_ms = std::chrono::duration<double>(stream_count_end - stream_count_begin).count();
+    double prefix_kernel_ms = std::chrono::duration<double>(prefix_kernel_end - prefix_kernel_begin).count();
+    double stream_kernel_ms = std::chrono::duration<double>(stream_kernel_end - stream_kernel_begin).count();
 
     double elapsed_ms = allocate_buffers_ms + stream_kernel_ms + prefix_kernel_ms + stream_count_ms + prefix_scan_ms;
 

@@ -10,6 +10,7 @@ include_directories(
 
 target_link_libraries(
   opencl-validator
+  PRIVATE
   ${OPENCL_LIBRARIES}
 )
 

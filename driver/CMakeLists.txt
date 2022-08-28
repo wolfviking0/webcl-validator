@@ -12,6 +12,7 @@ include_directories(
 )
 
 target_link_libraries(webcl-validator
+  PRIVATE
   clv_standalone
 )
 
